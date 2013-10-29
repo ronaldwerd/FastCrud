@@ -1,6 +1,6 @@
 <?
 
-class DBModel
+abstract class DBModel
 {
     protected static $dbh;
 
@@ -205,7 +205,6 @@ class DBModel
 
         $whereClause = "";
 
-
         foreach($andClause as $key => $value)
         {
             $whereClause .= $key."=:".$key." AND ";
@@ -273,7 +272,7 @@ class DBModel
         {
             $sql = $this->generateInsertSql($this->table, $data);
             $this->executePrepared($sql, $data);
-            $id = $this->lastInsertedId;
+            $id = self::$lastInsertedId;
         }
 
         return $id;
@@ -310,7 +309,6 @@ class DBModel
 
             foreach($clause->dataMap as $k => $v)
             {
-
                 if($clause->{$v} != null) {
                     $sqlClause[$k] = $clause->{$v};
                 }

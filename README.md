@@ -14,6 +14,8 @@ Features are:
 (D)elete: Delete a record by it's primary key.
 
 Example:
+
+<pre>
 <?
 
 class User extends DBModel
@@ -53,7 +55,7 @@ $u->save();
 
 // More documentation to follow later.
 
-
+</pre>
 
 
 

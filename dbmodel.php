@@ -10,10 +10,17 @@ abstract class DBModel
     protected $dataMap;
     protected static $lastInsertedId;
 
+    public static function connect()
+    {
+        self::$dbh = new PDO(DSN, DB_USER, DB_PASS, array(PDO::ATTR_PERSISTENT => true));
+    }
 
     function __construct()
     {
-        self::$dbh = new PDO(DSN, DB_USER, DB_PASS, array(PDO::ATTR_PERSISTENT => true));
+        if(self::$dbh == null)
+        {
+            self::connect();
+        }
     }
 
     function __destruct()
@@ -46,7 +53,6 @@ abstract class DBModel
         $sql = "SELECT DISTINCT " . $columnName . " FROM " . $object->table . " " . $whereClauseSql;
         $stmt = self::$dbh->prepare($sql);
         $stmt->execute($values);
-        $stmt->setAttribute(PDO::FETCH_ASSOC, true);
 
         $results = array();
 
@@ -57,14 +63,16 @@ abstract class DBModel
         return $results;
     }
 
-    protected function generateColumns()
+    protected function generateColumnString($columns)
     {
-        $reflect = new ReflectionClass($this);
-        $props = $reflect->getProperties(ReflectionProperty::IS_PUBLIC);
+        $columnStr = "";
 
-        foreach ($props as $prop) {
-            print $prop->getName() . "\n";
+        foreach($columns as $columnName)
+        {
+            $columnStr .= $columnName.", ";
         }
+
+        return substr($columnStr, 0, strlen($columnStr) - 2);
     }
 
     function execute($sql)

@@ -14,7 +14,10 @@ Features are:
 (D)elete: Delete a record by it's primary key.
 
 Example:
+
+<pre>
 <?
+require_once 'dbmodel.php';
 
 class User extends DBModel
 {
@@ -49,11 +52,29 @@ $u = new User();
 $u->email = "youremail@yourdomain.com";
 $u->firstName = "Ronald";
 $u->lastName = "Premier";
-$u->save();
+$id = $u->save(); // Returns the database generated Id
+
+/*
+ * Reading a record
+ */
+
+$u = User::get($id);
+
+/*
+ * Finding a record
+ * Simply populate an object with the properties you wish search for and 
+ * object::findAll($obj) will attempt to find a match.
+ * Each result found is an instiated object of model you created.
+ */ 
+
+$search = new User();
+$search->email = 'youremail@yourdomain.com';
+$results = User::findAll($search);
+
 
 // More documentation to follow later.
 
-
+</pre>
 
 
 

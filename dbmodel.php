@@ -41,7 +41,8 @@ abstract class DBModel
         $values = array();
         $whereClauseSql = "";
 
-        if (is_array($whereClause)) {
+        if (is_array($whereClause))
+        {
             $whereClauseSql = "WHERE ";
 
             foreach ($whereClause as $k => $v) {
@@ -176,7 +177,9 @@ abstract class DBModel
         if(is_array($columns))
         {
             foreach($columns as $columnName)
+            {
                 $columnsSelected .= $columnName.", ";
+            }
 
             $columnsSelected = substr($columnsSelected, 0, strlen($columnsSelected) - 2);
         }
@@ -190,13 +193,16 @@ abstract class DBModel
 
         if(is_array($andClause) && $andClause != null)
         {
-            foreach($andClause as $key => $value)
+            if(!empty($andClause))
             {
-                $whereParams .= $key."=:".$key." AND ";
-            }
+                foreach($andClause as $key => $value)
+                {
+                    $whereParams .= $key."=:".$key." AND ";
+                }
 
-            $whereParams = substr($whereParams, 0, strlen($whereParams) - 5);
-            $sql .=" WHERE ".$whereParams;
+                $whereParams = substr($whereParams, 0, strlen($whereParams) - 5);
+                $sql .=" WHERE ".$whereParams;
+            }
         }
 
         if(is_string($order) && $order != null)

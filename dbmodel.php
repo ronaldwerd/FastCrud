@@ -76,20 +76,6 @@ abstract class DBModel
         return substr($columnStr, 0, strlen($columnStr) - 2);
     }
 
-    function execute($sql)
-    {
-        $result = self::$dbh->query($sql);
-
-        if($result != false)
-        {
-            $rows = $result->fetchAll();
-            $this->$lastInsertedId = self::$dbh->lastInsertId();
-            return $rows;
-        }
-
-        return false;
-    }
-
 
     static function executePrepared($sql, $vars = null)
     {
@@ -234,12 +220,22 @@ abstract class DBModel
     {
         if($this->dataMap != null && is_array($this->dataMap))
         {
+            if(method_exists($this, 'preLoad'))
+            {
+                call_user_func(array($this, 'preLoad'));
+            }
+
             foreach($this->dataMap as $key => $value)
             {
                 if(property_exists($this, $value))
                 {
                     $this->{$value} = $data[$key];
                 }
+            }
+
+            if(method_exists($this, 'postLoad'))
+            {
+                call_user_func(array($this, 'postLoad'));
             }
         }
 

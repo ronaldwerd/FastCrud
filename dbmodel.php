@@ -304,6 +304,8 @@ abstract class DBModel
         $sql = self::generateSelectSql($object->table, array_keys($object->dataMap), $clause);
         $data = $object->executePrepared($sql, $clause);
 
+        if($data[0] == null) return null;
+
         $object->_loadDataRow($data[0]);
 
         return $object;

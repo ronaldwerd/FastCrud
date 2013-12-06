@@ -9,6 +9,12 @@ abstract class DBModel
 
     protected $dataMap;
     protected static $lastInsertedId;
+    private static $isDebug = false;
+
+    public static function setDebug($boolean)
+    {
+        self::$isDebug = $boolean;
+    }
 
     public static function connect()
     {
@@ -89,6 +95,12 @@ abstract class DBModel
             }
         }
 
+        if(self::$isDebug == true)
+        {
+            echo "<strong>".htmlentities($sql)."</strong>";
+            echo "<pre>";print_r($vars);echo "</pre>";
+        }
+
         $stmt->execute();
 
         $rows = $stmt->fetchAll();
@@ -155,7 +167,7 @@ abstract class DBModel
         return $sql;
     }
 
-    protected function generateSelectSql($table, $columns, $andClause = null, $order = null, $orderType = "ASC")
+    protected static function generateSelectSql($table, $columns, $andClause = null, $order = null, $orderType = "ASC")
     {
         $whereParams = "";
         $columnsSelected = "";

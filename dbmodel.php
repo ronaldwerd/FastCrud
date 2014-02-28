@@ -1,4 +1,4 @@
-<?
+<?php
 
 abstract class DBModel
 {
@@ -9,12 +9,6 @@ abstract class DBModel
 
     protected $dataMap;
     protected static $lastInsertedId;
-    private static $isDebug = false;
-
-    public static function setDebug($boolean)
-    {
-        self::$isDebug = $boolean;
-    }
 
     public static function connect()
     {
@@ -35,7 +29,7 @@ abstract class DBModel
     }
 
     public function getLastInsertedId() {
-        return self::lastInsertedId;
+        return self::$lastInsertedId;
     }
 
     protected static function getByDistinct($columnName, $whereClause = null)
@@ -70,13 +64,15 @@ abstract class DBModel
         return $results;
     }
 
-    protected function generateColumnString($columns)
+    protected function generateColumnString($columns, $columnPrefix = null)
     {
         $columnStr = "";
 
+        if($columnPrefix != null) $prefix = $columnPrefix.".";
+
         foreach($columns as $columnName)
         {
-            $columnStr .= $columnName.", ";
+            $columnStr .= $prefix.$columnName.", ";
         }
 
         return substr($columnStr, 0, strlen($columnStr) - 2);
@@ -87,21 +83,33 @@ abstract class DBModel
     {
         $stmt = self::$dbh->prepare($sql);
 
+        $dateTimeNow = date("Y-m-d H:i:s");
+
+        if(!strncmp($sql, "INSERT", 6)) {
+
+            if(array_key_exists ('created_on', $vars)) $vars['created_on'] = $dateTimeNow;
+            if(array_key_exists ('updated_on', $vars)) $vars['updated_on'] = $dateTimeNow;
+        }
+
+        if(!strncmp($sql, "UPDATE", 6)) {
+            if(isset($vars['updated_on'])) $vars['updated_on'] = $dateTimeNow;
+        }
+
         if(is_array($vars))
         {
             foreach($vars as $key => $value)
-            {
+            {                
                 $stmt->bindValue(":".$key, $value);
             }
         }
 
-        if(self::$isDebug == true)
-        {
-            echo "<strong>".htmlentities($sql)."</strong>";
-            echo "<pre>";print_r($vars);echo "</pre>";
+        if(!$stmt->execute()) {
+            echo "<pre>\n";
+            print_r($sql)."\n";
+            print_r($vars);
+            echo "</pre>\n";
+            throw new Exception('[' . $stmt->errorCode() . ']: ' . $stmt->errorInfo());
         }
-
-        $stmt->execute();
 
         $rows = $stmt->fetchAll();
 
@@ -167,7 +175,7 @@ abstract class DBModel
         return $sql;
     }
 
-    protected static function generateSelectSql($table, $columns, $andClause = null, $order = null, $orderType = "ASC")
+    protected static function generateSelectSql($table, $columns, $andClause = null, $order = null, $offset = null, $limit = null)
     {
         $whereParams = "";
         $columnsSelected = "";
@@ -195,7 +203,11 @@ abstract class DBModel
             {
                 foreach($andClause as $key => $value)
                 {
-                    $whereParams .= $key."=:".$key." AND ";
+                    if($value[0] == '%' && substr($value, -1) == '%') {
+                        $whereParams .= $key." LIKE :".$key. " AND ";
+                    } else {
+                        $whereParams .= $key."=:".$key." AND ";
+                    }
                 }
 
                 $whereParams = substr($whereParams, 0, strlen($whereParams) - 5);
@@ -203,9 +215,13 @@ abstract class DBModel
             }
         }
 
-        if(is_string($order) && $order != null)
+        if(is_string($order))
         {
-            $sql .=" ORDER BY ".$order." ".$orderType;
+            $sql .=" ORDER BY ".$order;
+        }
+
+        if(is_numeric($offset) && is_numeric($limit)) {
+            $sql .= " LIMIT ".$offset.", ".$limit;
         }
 
         return $sql;
@@ -292,6 +308,7 @@ abstract class DBModel
         }
         else
         {
+            unset($data['id']);
             $sql = $this->generateInsertSql($this->table, $data);
             $this->executePrepared($sql, $data);
             $id = self::$lastInsertedId;
@@ -300,9 +317,10 @@ abstract class DBModel
         return $id;
     }
 
-    public function delete($id)
+    public function delete()
     {
-
+        $sql = "DELETE FROM ".$this->table." WHERE ".$this->primaryKey." = :val";
+        $this->executePrepared($sql, array('val' => $this->{$this->primaryKey}));
     }
 
     public static function get($id)
@@ -323,7 +341,9 @@ abstract class DBModel
         return $object;
     }
 
-    public static function findAll($clause = null)
+
+
+    public static function findAll($clause = null, $order = null, $offset = null, $limit = null)
     {
         $sqlClause = null;
 
@@ -342,7 +362,7 @@ abstract class DBModel
         $className = get_called_class();
 
         $object = new $className();
-        $sql = self::generateSelectSql($object->table, array_keys($object->dataMap), $sqlClause);
+        $sql = self::generateSelectSql($object->table, array_keys($object->dataMap), $sqlClause, $order, $offset, $limit);
         unset($object);
 
         $data = self::executePrepared($sql, $sqlClause);
@@ -356,5 +376,17 @@ abstract class DBModel
         }
 
         return $objectList;
+    }
+
+    public static function resultObjToArray($result)
+    {
+        $resultsBuffer = array();
+
+        foreach ($result as $r) {
+            $new_row = (array)$r;
+            $resultsBuffer[] = $new_row;
+        }
+
+        return $resultsBuffer;
     }
 }
